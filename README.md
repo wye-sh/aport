@@ -42,7 +42,7 @@ which keys match against existing entries.
 ## Installation
 
 If you're using CMake, add the following to your `CMakeLists.txt`:
-```cpp
+```cmake
 include(FetchContent)
 FetchContent_Declare(
     aport
@@ -62,7 +62,7 @@ your project.
 
 You have the opportunity for further customization before your call to
 `FetchContent_MakeAvailable()`.
-```cpp
+```cmake
 # If on, APORT will behave exactly like a normal radix tree
 set(APORT_RADIX_MODE <OFF|ON>) # Default: OFF
 ```
