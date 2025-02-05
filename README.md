@@ -42,8 +42,7 @@ which keys match against existing entries.
 ## Installation
 
 If you're using CMake, add the following to your `CMakeLists.txt`:
-
-```
+```cpp
 include(FetchContent)
 FetchContent_Declare(
     aport
@@ -63,8 +62,7 @@ your project.
 
 You have the opportunity for further customization before your call to
 `FetchContent_MakeAvailable()`.
-
-```
+```cpp
 # If on, APORT will behave exactly like a normal radix tree
 set(APORT_RADIX_MODE <OFF|ON>) # Default: OFF
 ```
@@ -75,14 +73,14 @@ APORT follows the container design patterns of the C++ Standard Libary.
 
 ### Creation
 To get started:
-```
+```cpp
 // The value can be any type, not just `int`
 aport::tree<int> Tree;
 ```
 
 ### insert(key, value)
 Inserts a key-value pair into the tree.
-```
+```cpp
 // Insert multiple entries with similar disambiugation points
 Tree.insert("arnold", 12);
 Tree.insert("arbold", 13);
@@ -92,7 +90,7 @@ Tree.insert("arwold", 15);
 
 ### contains(key)
 Checks if key exists in the tree.
-```
+```cpp
 // Remember that this uses a radix algorithm
 if (Tree.contains("arwold"))
   printf("Wow, Arwold!\n");
@@ -100,7 +98,7 @@ if (Tree.contains("arwold"))
 
 ### erase(key) / erase(iterator)
 Removes an entry from the tree.
-```
+```cpp
 // Deletes the entry `"arcold"` and its data
 Tree.erase("arcold");
 
@@ -111,7 +109,7 @@ Tree.erase(<iterator>);
 ### get(key)
 Returns a reference to the value associated with the key, or throws an 
 `aport::no_such_key` exception if it could not be located.
-```
+```cpp
 int &Arwold = Tree.get("arwold");
 // Since `Arwold` is a reference, modifications affect the stored value
 Arwold = 19;
@@ -123,7 +121,7 @@ Like `get()` but default-constructs a new value if the key doesn't exist.
 optimistic retrieval. It is also worth noting that this still is much faster
 than first calling `contains()` and inserting if necessary and then calling
 `get()`.
-```
+```cpp
 // If "thomas" doesn't exist, this creates him with value 0
 int &Thomas = Tree["thomas"];
 // But we could just as easily create him or his friend and give him a value
@@ -134,7 +132,7 @@ Tree["brian"] = 34;
 ### Iteration
 The tree supports standard iterator operations. The order of the elements for
 iteration is undefined.
-```
+```cpp
 // Range-based for loop (`Key` and `Value` are references)
 for (auto [ Key, Value ] : Tree)
   ; // Process key-value pair
@@ -146,6 +144,6 @@ for (auto I = Tree.begin(); I != Tree.end();)
 
 ### length()
 Returns the number of elements in the tree.
-```
+```cpp
 size_t count = Tree.length();
 ```
