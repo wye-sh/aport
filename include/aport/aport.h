@@ -711,9 +711,9 @@ private: ///////////////////////////////////////////////////////////////////////
     /**
      * ...
      */
-    node (const string &Prefix, T Data)
+    node (const string &Prefix, T &&Data)
       : Prefix((Prefix)),
-	Data  (std::move(Data)) {
+	Data  (std::forward<T>(Data)) {
       // ...
     } // `node ()`
 
