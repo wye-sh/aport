@@ -145,5 +145,5 @@ for (auto I = Tree.begin(); I != Tree.end();)
 ### length()
 Returns the number of elements in the tree.
 ```cpp
-size_t count = Tree.length();
+size_t Count = Tree.length();
 ```
