@@ -15,25 +15,6 @@ using namespace std;
 
 #define STRINGIFY_CAPACITY 8192
 
-void timestamp () {
-  const auto time_ms = []() {
-    auto now      = chrono::system_clock::now();
-    auto duration = now.time_since_epoch();
-    return chrono::duration_cast<chrono::milliseconds>(duration).count();
-  };
-  thread_local static bool      closing = false;
-  thread_local static long long last_time;
-  if (!closing) {
-    last_time = time_ms();
-    closing = true;
-  } else {
-    auto time = time_ms();
-    auto dtime = time - last_time;
-    printf("%lld\n", dtime);
-    closing = false;
-  }
-} // `timestamp ()`
-
 template<typename T>
 string stringify(aport::tree<T>& Tree) {
   // Create a temporary file
@@ -398,4 +379,86 @@ TEST_CASE("Retreival (Insert If Necessary)", "[insert-if-necessary-and-get]") {
 )");
   
   REQUIRE(NameToAge.length() == 3);
+}
+
+TEST_CASE("Copy and Move", "copy-and-move") {
+  aport::tree<int> Tree;
+
+  Tree["one"]   = 1;
+  Tree["two"]   = 1;
+  Tree["three"] = 2;
+  Tree["four"]  = 3;
+  Tree["five"]  = 5;
+  Tree["six"]   = 8;
+  Tree["seven"] = 13;
+  Tree["eight"] = 21;
+
+  compare(Tree, R"(
+`eight`: 21
+`f`
+ `ive`: 5
+ `our`: 3
+`one`: 1
+`s`
+ `even`: 13
+ `ix`: 8
+`t`
+ `hree`: 2
+ `wo`: 1
+)");
+
+  // Verify that std::move works
+  aport::tree<int> MoveInto;
+  MoveInto = std::move(Tree);
+
+  compare(MoveInto, R"(
+`eight`: 21
+`f`
+ `ive`: 5
+ `our`: 3
+`one`: 1
+`s`
+ `even`: 13
+ `ix`: 8
+`t`
+ `hree`: 2
+ `wo`: 1
+)");
+
+  // Verify copying works
+  aport::tree<int> Copy;
+  Copy = MoveInto;
+
+  compare(MoveInto, R"(
+`eight`: 21
+`f`
+ `ive`: 5
+ `our`: 3
+`one`: 1
+`s`
+ `even`: 13
+ `ix`: 8
+`t`
+ `hree`: 2
+ `wo`: 1
+)");
+
+  compare(Copy, R"(
+`eight`: 21
+`f`
+ `ive`: 5
+ `our`: 3
+`one`: 1
+`s`
+ `even`: 13
+ `ix`: 8
+`t`
+ `hree`: 2
+ `wo`: 1
+)");
+  REQUIRE(Copy.length() == MoveInto.length());
+  int N = 0;
+  for (const auto &[ _1, _2 ] : Copy)
+    ++ N;
+  REQUIRE(Copy.length() == N);
 }

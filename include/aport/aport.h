@@ -91,7 +91,7 @@ struct no_such_key: exception {
    * ...
    */
   no_such_key (string KeyName): KeyName((KeyName)) {
-    Message = format("No such key: `{}`.", this->KeyName);
+    Message = format("No such key: \"{}\".", this->KeyName);
   } // `no_such_key ()`
 
   /**
@@ -121,6 +121,85 @@ struct tree {
     Root = make_unique<node>("");
   } // `tree ()`
 
+  /**
+   * Copy constructor.
+   */
+  tree (const tree &Other) {
+    // Mappings
+    unordered_map<const node *, node *> OtherNodeToNode;
+    
+    // Copies `Prefix` and `Data` of `OtherNode`, but not the char to node table
+    const auto shallow_copy = [&](const node *OtherNode) {
+      unique_ptr<node> Node = make_unique<node>(OtherNode->Prefix);
+      if (OtherNode->Data) // Copy over data (if any)
+	Node->Data = *OtherNode->Data;
+      OtherNodeToNode[OtherNode] = &*Node;
+      return std::move(Node);
+    }; // `shallow_copy ()`
+
+    // Copy over root
+    Root = shallow_copy(&*Other.Root);
+
+    // Set up stack and use it
+    struct entry { node *Node; const node *OtherNode; };
+    stack<entry> Stack;
+    Stack.push({ &*Root, &*Other.Root });
+    while (!Stack.empty()) {
+      auto [ Node, OtherNode ] = Stack.top();
+      Stack.pop();
+      
+      // Go over all the children of the two equivalently positioned nodes
+      for (const auto &[ FirstChar, OtherChild ] : OtherNode->FirstCharToNode) {
+	unique_ptr<node> Child = shallow_copy(&*OtherChild);
+	Stack.push({ &*Child, &*OtherChild }); // Push children onto stack
+	Node->FirstCharToNode[FirstChar] = std::move(Child);
+      }
+    }
+
+    // Populate `Nodes` and `NodeToNodesIterator`
+    for (auto I = Other.Nodes.rbegin(); I != Other.Nodes.rend(); ++ I) {
+      const auto &[ OtherKey, OtherNode ] = *I;
+      node *NodePtr = OtherNodeToNode[&*OtherNode];
+      Nodes.emplace_front(OtherKey, NodePtr);
+      NodeToNodesIterator[NodePtr] = Nodes.begin();
+    }
+    
+    // Transfer over `Length`
+    Length = Other.Length;
+  } // `tree ()`
+
+  /**
+   * Move constructor.
+   */
+  tree (tree &&Other) noexcept {
+    Root                = std::move(Other.Root);
+    Length              = Other.Length;
+    Nodes               = std::move(Other.Nodes);
+    NodeToNodesIterator = std::move(Other.NodeToNodesIterator);
+  } // `tree ()`
+
+  /**
+   * Copy assignment.
+   */
+  tree &operator=(const tree &Other) {
+    if (this != &Other) {
+      this->~tree();
+      new (this) tree(Other);
+    }
+    return *this;
+  } // `operator= ()`
+
+  /**
+   * Move assignment.
+   */
+  tree &operator= (tree &&Other) noexcept {
+    if (this != &Other) {
+      this->~tree();                     // Call destructor
+      new (this) tree(std::move(Other)); // Move constructor placement new
+    }
+    return *this;
+  } // `operator= ()`
+  
   /**
    * Inserts an object `value` of type `T` into the tree at key `key`.
    */
@@ -295,7 +374,7 @@ struct tree {
             // disambiguation; thus, do nothing
           }
         }
-
+	
         -- Length;
       } return; // [[RETURN]]
         // ^- exact_match
@@ -309,6 +388,7 @@ struct tree {
    * this using an iterator that does not point to an element.
    */
   iterator erase (iterator Iterator);
+  // ^- Out-of-line definition because iterator needs to be fully formed
 
   /**
    * Checks if tree contains an entry whose key is `Key`.
@@ -624,14 +704,14 @@ private: ///////////////////////////////////////////////////////////////////////
     /**
      * ...
      */
-    node (string Prefix): Prefix((Prefix)) {
+    node (const string &Prefix): Prefix((Prefix)) {
       // ...
     } // `node ()`
 
     /**
      * ...
      */
-    node (string Prefix, T Data): Prefix((Prefix)), Data(Data) {
+    node (const string &Prefix, T Data): Prefix((Prefix)), Data(Data) {
       // ...
     } // `node ()`
 

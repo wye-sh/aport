@@ -45,9 +45,9 @@ If you're using CMake, add the following to your `CMakeLists.txt`:
 ```cmake
 include(FetchContent)
 FetchContent_Declare(
-    aport
-    GIT_REPOSITORY https://github.com/wye-sh/aport
-    GIT_TAG v1.0.0 # v1.0.0 is the latest stable version
+  aport
+  GIT_REPOSITORY https://github.com/wye-sh/aport
+  GIT_TAG v1.0.0 # Check tags for which version is latest
 )
 FetchContent_MakeAvailable(aport)
 
