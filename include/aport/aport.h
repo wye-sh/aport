@@ -236,7 +236,7 @@ struct tree {
           // No node down this path already exists, therefore we create a new
           // one to store the remaining data
           unique_ptr<node> NewNode = make_unique<node>
-            (string(KeyPtr, KeyPtrLength), Value);
+            (string(KeyPtr, KeyPtrLength), std::move(Value));
           Track(&*NewNode, Key);
           Node->FirstCharToNode[NodeAccessor] = std::move(NewNode);
           ++ Length;
@@ -264,7 +264,7 @@ struct tree {
         if (KeyPtrLength > 0) {
           // This is the new node we create for the disamiguation for string
           unique_ptr<node> NewNode = make_unique<node>
-            (string(KeyPtr, KeyPtrLength), Value);
+            (string(KeyPtr, KeyPtrLength), std::move(Value));
           // Insert new node into intermediate node
           Track(&*NewNode, Key);
           IntermediateNode->FirstCharToNode[NewNode->Prefix[0]] =
@@ -273,7 +273,7 @@ struct tree {
           // No string left, insert value into the intermediate node that was
           // created
           Track(&*IntermediateNode, Key);
-          IntermediateNode->Data = Value;
+          IntermediateNode->Data = std::move(Value);
         }
 
         // Insert intermediate node into map
@@ -288,7 +288,7 @@ struct tree {
         // we are inserting
         if (!(bool) Node->Data)
           ++ Length;
-        Node->Data = Value;
+        Node->Data = std::move(Value);
         Track(Node, Key);
         // length stays unchanged
         return; // [[RETURN]]
