@@ -47,7 +47,7 @@ include(FetchContent)
 FetchContent_Declare(
   aport
   GIT_REPOSITORY https://github.com/wye-sh/aport
-  GIT_TAG v1.1.0 # v1.1.0 is the latest version
+  GIT_TAG v1.1.0 # (latest version)
 )
 FetchContent_MakeAvailable(aport)
 
