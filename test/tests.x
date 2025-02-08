@@ -71,7 +71,7 @@ TEST_CASE("@", "[info]") {
   printf(".\n");
 }
 
-TEST_CASE("Insertion", "[insertion]") {
+TEST_CASE("Insertion", "[test]") {
   aport::tree<int> NameToAge;
   
   // Start with "al"
@@ -148,7 +148,7 @@ TEST_CASE("Insertion", "[insertion]") {
   REQUIRE(NameToAge.length() == 8);
 }
 
-TEST_CASE("Contains", "[contains]") {
+TEST_CASE("Contains", "[test]") {
   aport::tree<int> NameToAge;
   
   NameToAge.insert("a",      0);
@@ -181,7 +181,7 @@ TEST_CASE("Contains", "[contains]") {
   REQUIRE(!NameToAge.contains("hello"));
 }
 
-TEST_CASE("Deletion and Clearing", "[deletion:clearing]") {
+TEST_CASE("Deletion and Clearing", "[test]") {
   aport::tree<int> NameToAge;
   
   NameToAge.insert("a",      1);
@@ -276,7 +276,7 @@ TEST_CASE("Deletion and Clearing", "[deletion:clearing]") {
   compare(NameToAge, "");
 }
 
-TEST_CASE("Iteration", "[iteration]") {
+TEST_CASE("Iteration", "[test]") {
   aport::tree<int> NameToAge;
   
   NameToAge.insert("a",      1);
@@ -316,7 +316,7 @@ TEST_CASE("Iteration", "[iteration]") {
   REQUIRE(NameToAge.length() == 0);
 }
 
-TEST_CASE("Retrieval", "[get]") {
+TEST_CASE("Retrieval", "[test]") {
   aport::tree<int> NameToAge;
   
   NameToAge.insert("a",      1);
@@ -353,7 +353,7 @@ TEST_CASE("Retrieval", "[get]") {
   }
 }
 
-TEST_CASE("Retreival (Insert If Necessary)", "[insert-if-necessary-and-get]") {
+TEST_CASE("Retreival (Insert If Necessary)", "[test]") {
   aport::tree<int> NameToAge;
 
   NameToAge["hello"] = 12;
