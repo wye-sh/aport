@@ -29,11 +29,10 @@
 #include <exception>
 #include <format>
 
-/**
- * PATH UNREACHABLE
- * ----------------
- *  Macro for versions prior to C++23 to do what the [[unreachable]] attribute
- *  does.
+/*
+ * PATH_UNREACHABLE()
+ *   Macro for versions prior to C++23 to do what the [[unreachable]] attribute
+ *   does.
  */
 #ifndef PATH_UNREACHABLE
 #  if defined(_MSC_VER)
@@ -47,13 +46,12 @@ namespace aport {
 
 using namespace std;
 
-/**
- * APORT RADIX MODE
- * ----------------
- *  option(APORT_RADIX_MODE) - specifies if full radix matching should be used,
- *  effectively turning the aport tree into a radix tree. This can be used to
- *  help track down malformed retrieval strings or to convert the project to use
- *  radix trees if the project did not meet the criteria for aport trees.
+/*
+ * AportRadixMode
+ *   option(APORT_RADIX_MODE) - specifies if full radix matching should be used,
+ *   effectively turning the aport tree into a radix tree. This can be used to
+ *   help track down malformed retrieval strings or to convert the project to
+ *   use radix trees if the project did not meet the criteria for aport trees.
  */
 #ifdef APORT_RADIX_MODE
 constexpr bool AportRadixMode = true;
@@ -61,25 +59,23 @@ constexpr bool AportRadixMode = true;
 constexpr bool AportRadixMode = false;
 #endif
 
-/**
- * HAS TO STRING
- * -------------
- *  Trait to check if `T` has a `to_string` function.
+/*
+ * concept has_to_string
+ *   Trait to check if `T` has a `to_string` function.
  */
 template <typename T>
 concept has_to_string = requires(T x) {
   { to_string(x) } -> same_as<string>;
 };
 
-/**
- * NO SUCH KEY (EXCEPTION)
- * -----------------------
- *  When thrown, it denotes that the key that was attempted to be retrieved does
- *  not exist in the structure.
- */
+/**---------------------------------------------------------------------------
+ * struct no_such_key
+ *   When thrown, it denotes that the key that was attempted to be retrieved
+ *   does not exist in the structure.
+ *---------------------------------------------------------------------------**/
 struct no_such_key: exception {
   //////////////////////////////////////////////////////////////////////////////
-  ////////////////////////  PUBLIC INSTANCE VARIABLES  /////////////////////////
+  ////////////////////////  public instance variables  /////////////////////////
   //////////////////////////////////////////////////////////////////////////////
   string KeyName;
   string Message;
@@ -87,41 +83,43 @@ struct no_such_key: exception {
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
 
-  /**
+  /*
    * ...
    */
   no_such_key (string KeyName): KeyName((KeyName)) {
     Message = format("No such key: \"{}\".", this->KeyName);
-  } // `no_such_key ()`
+  } // no_such_key()
 
-  /**
+  /*
    * ...
    */
   const char *what () const noexcept override {
     return Message.c_str();
-  } // `what ()`
-}; // `no_such_key`
+  } // what()
+}; // struct no_such_key
 
-/**
- * TREE
- * ----
- *  The APORT tree container, into which data can be inserted or erased, looked
- *  up or checked for inclusion. The type template parameter `T` specifies the
- *  type stored in the tree.
- */
+/**---------------------------------------------------------------------------
+ * struct tree
+ *   [movable] The APORT tree container, into which data can be inserted or
+ *   erased, looked up or checked for inclusion. <T> specifies the type stored
+ *   in the tree.
+ *---------------------------------------------------------------------------**/
 template<typename T>
 struct tree {
-  // Out-of-line definition
+  /**-------------------------------------------------------------------------
+   * struct iterator
+   *   Forward iterator.
+   *-------------------------------------------------------------------------**/
   struct iterator;
-
-  /**
+  
+  /*
    * ...
    */
   tree () {
     Root = make_unique<node>("");
   } // `tree ()`
 
-  /**
+  /*
    * Copy constructor.
    */
   tree (const tree &Other) {
@@ -166,9 +164,9 @@ struct tree {
     
     // Transfer over `Length`
     Length = Other.Length;
-  } // `tree ()`
-
-  /**
+  } // tree()
+  
+  /*
    * Move constructor.
    */
   tree (tree &&Other) noexcept {
@@ -176,9 +174,9 @@ struct tree {
     Length              = Other.Length;
     Nodes               = std::move(Other.Nodes);
     NodeToNodesIterator = std::move(Other.NodeToNodesIterator);
-  } // `tree ()`
+  } // tree()
 
-  /**
+  /*
    * Copy assignment.
    */
   tree &operator=(const tree &Other) {
@@ -187,9 +185,9 @@ struct tree {
       new (this) tree(Other);
     }
     return *this;
-  } // `operator= ()`
+  } // operator=()
 
-  /**
+  /*
    * Move assignment.
    */
   tree &operator= (tree &&Other) noexcept {
@@ -198,11 +196,14 @@ struct tree {
       new (this) tree(std::move(Other)); // Move constructor placement new
     }
     return *this;
-  } // `operator= ()`
+  } // operator=()
   
-  /**
-   * Inserts an object `value` of type `T` into the tree at key `key`.
-   */
+  /**-------------------------------------------------------------------------
+   * insert()
+   *   Inserts an object of type `T` into the tree at `Key`. <Key> is the
+   *   location the inserted `Value` should be retrievable per, and <Value>
+   *   is the value to be inserted per `Key`.
+   *-------------------------------------------------------------------------**/
   void insert (string Key, T Value) {
     using comparison_result = node::comparison_result;
 
@@ -237,7 +238,7 @@ struct tree {
           // one to store the remaining data
           unique_ptr<node> NewNode = make_unique<node>
             (string(KeyPtr, KeyPtrLength), std::move(Value));
-          Track(&*NewNode, Key);
+          track(&*NewNode, Key);
           Node->FirstCharToNode[NodeAccessor] = std::move(NewNode);
           ++ Length;
         }
@@ -266,13 +267,13 @@ struct tree {
           unique_ptr<node> NewNode = make_unique<node>
             (string(KeyPtr, KeyPtrLength), std::move(Value));
           // Insert new node into intermediate node
-          Track(&*NewNode, Key);
+          track(&*NewNode, Key);
           IntermediateNode->FirstCharToNode[NewNode->Prefix[0]] =
             std::move(NewNode);
         } else {
           // No string left, insert value into the intermediate node that was
           // created
-          Track(&*IntermediateNode, Key);
+          track(&*IntermediateNode, Key);
           IntermediateNode->Data = std::move(Value);
         }
 
@@ -289,17 +290,19 @@ struct tree {
         if (!(bool) Node->Data)
           ++ Length;
         Node->Data = std::move(Value);
-        Track(Node, Key);
+        track(Node, Key);
         // length stays unchanged
         return; // [[RETURN]]
         // ^- exact_match
       }
     }
-  } // `insert ()`
+  } // insert()
 
-  /**
-   * Erases the entry where the key is `key`.
-   */
+  /**-------------------------------------------------------------------------
+   * erase()
+   *   Erases the entry at location `Key`. <Key> is the location at which an
+   *   entry should be deleted from the tree.
+   *-------------------------------------------------------------------------**/
   void erase (string Key) {
     using comparison_result = node::comparison_result;
 
@@ -339,7 +342,7 @@ struct tree {
 
       case comparison_result::exact_match: {
         // We are removing `node` from `parent` (at `node_accessor`)
-        Untrack(&*Node);
+        untrack(&*Node);
         Node->Data.reset();
 
         // Only if `node` is not the root node might we be required to
@@ -380,19 +383,24 @@ struct tree {
         // ^- exact_match
       }
     }
-  } // `erase ()`
+  } // erase()
 
-  /**
-   * Erases an element using an iterator `Iterator`. Returns an iterator to the
-   * element after the one that was erased. It is undefined behaviour to call
-   * this using an iterator that does not point to an element.
-   */
+  /**-------------------------------------------------------------------------
+   * erase()
+   *   Erases an element using an iterator `Iterator`. It is undefined
+   *   behaviour to call this using an iterator that does not point to an
+   *   element. <Iterator> is an iterator to the element you want to delete.
+   *   <Returns> an iterator to the element after the one that was erased.
+   *-------------------------------------------------------------------------**/
   iterator erase (iterator Iterator);
   // ^- Out-of-line definition because iterator needs to be fully formed
 
-  /**
-   * Checks if tree contains an entry whose key is `Key`.
-   */
+  /**-------------------------------------------------------------------------
+   * contains()
+   *   Checks if tree contains an entry whose key is `Key`. <Key> is the key to
+   *   check for to see if it is contained by the tree. <Returns> `true` if
+   *   entry per `Key` exists in the tree, and `false` otherwise.
+   *-------------------------------------------------------------------------**/
   bool contains (string Key) {
     using comparison_result = node::comparison_result;
 
@@ -434,12 +442,14 @@ struct tree {
       }
     }
   } // `contains ()`
-
-  /**
-   * Returns the data of type `T` from the tree node at `Key` if it exists,
-   * otherwise if no data or key exists, throws an `aport::no_such_key`
-   * exception.
-   */
+  
+  /**-------------------------------------------------------------------------
+   * get()
+   *   [throws] Retrieve data of type `T` from tree node at `Key` if it exists.
+   *   <Key> is the location to retrieve data from. <Returns> the data of type
+   *   `T` at location `Key` (if it exists), otherwise if no data or key exists,
+   *   throws `no_such_key` exception.
+   *-------------------------------------------------------------------------**/
   T &get (string Key) {
     using comparison_result = node::comparison_result;
 
@@ -484,13 +494,14 @@ struct tree {
     }
   } // `get ()`
 
-  /**
-   * Returns the data of type `T` from the tree node at `Key` if it exists,
-   * otherwise creates it, returning the data of type `T` from the newly
-   * inserted node. This uses radix functionality all the way through, so
-   * if radix performance is desired, first inserting and then using `get` is
-   * required.
-   */
+  /**-------------------------------------------------------------------------
+   * operator[]()
+   *   Retrieve the data of type `T` from tree node at `Key` if it exists,
+   *   otherwise creates it, returning the data of type `T` from the newly
+   *   inserted node. <Key> is the location to retrieve data from (or insert
+   *   data into). <Returns> the data of type `T` at location `Key` (if it
+   *   exists), otherwise creates it and returns the newly created data.
+   *-------------------------------------------------------------------------**/
   T &operator[] (string Key) {
     using comparison_result = node::comparison_result;
 
@@ -527,7 +538,7 @@ struct tree {
           unique_ptr<node> NewNode = make_unique<node>
             (string(KeyPtr, KeyPtrLength), T());
 	  T *Return = &*NewNode->Data;
-          Track(&*NewNode, Key);
+          track(&*NewNode, Key);
           Node->FirstCharToNode[NodeAccessor] = std::move(NewNode);
           ++ Length;
 	  return *Return; // [[RETURN]]
@@ -559,13 +570,13 @@ struct tree {
             (string(KeyPtr, KeyPtrLength), T());
 	  Return = &*NewNode->Data;
           // Insert new node into intermediate node
-          Track(&*NewNode, Key);
+          track(&*NewNode, Key);
           IntermediateNode->FirstCharToNode[NewNode->Prefix[0]] =
             std::move(NewNode);
         } else {
           // No string left, insert value into the intermediate node that was
           // created
-          Track(&*IntermediateNode, Key);
+          track(&*IntermediateNode, Key);
 	  if (!(bool) IntermediateNode->Data)
 	    IntermediateNode->Data = T();
           Return = &*IntermediateNode->Data;
@@ -586,43 +597,42 @@ struct tree {
           ++ Length;
 	  Node->Data = T();
 	}
-        Track(Node, Key);
+        track(Node, Key);
         // length stays unchanged
         return *Node->Data; // [[RETURN]]
         // ^- exact_match
       }
     }
-  } // `operator[] ()`
+  } // operator[]()
 
-  /**
-   * Clears all the content inside the tree.
-   */
+  /**-------------------------------------------------------------------------
+   * clear()
+   *   Clears all the content inside the tree.
+   *-------------------------------------------------------------------------**/
   void clear () {
     Root = make_unique<node>("");
-  } // `Clear ()`
+  } // clear()
 
-  /**
-   * Returns the number of entries stored inside this tree.
-   */
+  /**-------------------------------------------------------------------------
+   * length()
+   *   Returns the number of entries stored inside the tree. <Returns> the
+   *   number of entries stored inside the tree.
+   *-------------------------------------------------------------------------**/
   size_t length () {
     return Length;
-  }
+  } // length()
 
-  /**
-   * Visual representation of the tree. Could be useful for someone outside of
-   * testing, so rather than making it local to the root test file, we are wri-
-   * ting it here.
-   */
+  /**-------------------------------------------------------------------------
+   * print()
+   *   Outputs a visual representation of the tree. Could be useful for someone
+   *   outside testing, so rather than making it local to the root test file,
+   *   it has been provided here directly.
+   *-------------------------------------------------------------------------**/
   void print () {
-    /**
-     * PRINT () :: ENTRY
-     * -----------------
-     *  Stack entry.
-     */
     struct entry {
       node *Node;
       int   Level;
-    }; // `entry`
+    }; // struct entry
 
     stack<entry> Stack;
     Stack.push({ &*Root, -1 });
@@ -655,30 +665,36 @@ struct tree {
         Stack.push({ Child, Level + 1 });
       }
     }
-  } // `Print ()`
+  } // print()
 
+  /**-------------------------------------------------------------------------
+   * begin()
+   *   Begin iterator.
+   *-------------------------------------------------------------------------**/
   iterator begin () {
     return iterator(Nodes.begin());
-  } // `begin ()`
-
+  } // begin()
+  
+  /**-------------------------------------------------------------------------
+   * end()
+   *   End iterator.
+   *-------------------------------------------------------------------------**/
   iterator end () {
     return iterator(Nodes.end());
-  } // `end ()`
+  } // end()
 
 private: ///////////////////////////////////////////////////////////////////////
-  /**
-   * TREE :: NODE
-   * ------------
-   *  Point of disambiguation for strings. For instance, we may have one string
-   *  key "hello" in our tree and also "helium", making our first node store the
-   *  segment "hel", then linking to nodes for the letter "l" and "i" respect-
-   *  ively, as is typical for a radix tree implementation.
+  /*
+   * struct node
+   *   Point of disambiguation for strings. For instance, we may have one
+   *   string key "hello" in our tree and also "helium", making our first node
+   *   store the segment "hel", then linking to nodes for the letter "l" and
+   *   "i" respectively, as is typical for a radix tree implementation.
    */
   struct node {
-    /**
-     * TREE :: NODE :: COMPARISON RESULT
-     * ---------------------------------
-     *  Result when using the comparison method.
+    /*
+     * enum class comparison_result
+     *   Result when using the comparison method.
      */
     enum class comparison_result {
       no_match,
@@ -689,10 +705,10 @@ private: ///////////////////////////////////////////////////////////////////////
       // ^- Means string was matched in full but prefix still has a tail
       exact_match
       // ^- Means prefix and string matched perfectly (in length also)
-    }; // `comparison_result`
+    }; // enum class comparison_result
 
     ////////////////////////////////////////////////////////////////////////////
-    ///////////////////////  PUBLIC INSTANCE VARIABLES  ////////////////////////
+    ///////////////////////  public instance variables  ////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     optional<T>                           Data;
     string                                Prefix;
@@ -701,24 +717,25 @@ private: ///////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////
 
-    /**
+    /*
      * ...
      */
     node (const string &Prefix): Prefix((Prefix)) {
       // ...
-    } // `node ()`
+    } // node()
 
-    /**
+    /*
      * ...
      */
     node (const string &Prefix, T &&Data)
       : Prefix((Prefix)),
 	Data  (std::forward<T>(Data)) {
       // ...
-    } // `node ()`
+    } // node()
 
-    /**
-     * Returns a pair consisting of a `comparison_result`
+    /*
+     * compare_prefixes()
+     *   Returns a pair consisting of a `comparison_result`
      */
     template<bool UseRadix>
     pair<comparison_result, size_t> compare_prefixes
@@ -760,18 +777,23 @@ private: ///////////////////////////////////////////////////////////////////////
 	}
       }
       return { Result, NMatched };
-    } // `compare_prefixes ()`
-  }; // `node`
+    } // compare_prefixes()
+  }; // struct node
 
+  /*
+   * struct node_info
+   *   Information about a node for iteration, storing `Key` alongside it for
+   *   quick lookup.
+   */
   struct node_info {
     string  Key;
     node   *Node;
-  }; // `node_info`
+  }; // struct node_info
 
   friend struct iterator;
 
   //////////////////////////////////////////////////////////////////////////////
-  ////////////////////////  PRIVATE INSTANCE VARIABLES  ////////////////////////
+  ////////////////////////  private instance variables  ////////////////////////
   //////////////////////////////////////////////////////////////////////////////
   unique_ptr<node>                      Root;
   size_t                                Length {};
@@ -782,43 +804,53 @@ private: ///////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
 
-  /** Insert into `Nodes` and `node_to_node_info` */
-  void Track (node *Node, string Key) {
+  /*
+   * track()
+   *   Insert into `Nodes` and `node_to_node_info`.
+   */
+  void track (node *Node, string Key) {
     Nodes.emplace_front(Key, Node);
     if (NodeToNodesIterator.contains(Node))
       // If there already is an iterator for `node`, remove node from `nodes`
       // using mapping
       Nodes.erase(NodeToNodesIterator[Node]);
     NodeToNodesIterator[Node] = Nodes.begin();
-  } // `Track ()`
+  } // track()
 
-  /** Erase from `Nodes` and `node_to_node_info` */
-  void Untrack (node *Node) {
+  /*
+   * untrack()
+   *   Erase from `Nodes` and `node_to_node_info`.
+   */
+  void untrack (node *Node) {
     auto E = NodeToNodesIterator.extract(Node);
     Nodes.erase(E.mapped());
-  } // `Untrack ()`
+  } // untrack()
 }; // `tree`
 
-/**
- * TREE :: ITERATOR
- * ----------------
- *  Forward iterator for APORT tree.
- */
+
+////////////////////////////////////////////////////////////////////////////////
+//  TREE :: ITERATOR  //////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
 template<typename T>
 struct tree<T>::iterator {
+  /*
+   * struct result
+   *   The type returned through dereferencing.
+   */
   struct result {
     string &Key;
     T      &Value;
-  }; // `result`
+  }; // struct result
 
-  /**
+  /*
    * ...
    */
   iterator (decltype(tree::Nodes)::iterator Iterator): Iterator(Iterator) {
     // ...
-  } // `iterator ()`
+  } // iterator()
 
-  /**
+  /*
    * ...
    */
   result operator* () {
@@ -826,38 +858,38 @@ struct tree<T>::iterator {
     return result
       (NodeInfo.Key,
        *NodeInfo.Node->Data);
-  }
+  } // operator*()
 
-  /**
+  /*
    * ...
    */
   iterator &operator++ () {
     ++ Iterator;
     return *this;
-  } // `operator++ ()`
+  } // operator++()
 
-  /**
+  /*
    * ...
    */
   iterator operator++ (int) {
     iterator Copy = *this;
     ++ (*this);
     return Copy;
-  } // `operator++ (int)`
+  } // operator++(int)
 
-  /**
+  /*
    * ...
    */
   bool operator== (const iterator &Other) const {
     return Iterator == Other.Iterator;
-  } // `operator== ()`
+  } // operator==()
 
-  /**
+  /*
    * ...
    */
   bool operator!= (const iterator &Other) const {
     return !(*this == Other);
-  } // `operator!= ()`
+  } // operator!=()
 
 private: ///////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
@@ -867,7 +899,12 @@ private: ///////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
-}; // `iterator`
+}; // struct iterator
+
+
+////////////////////////////////////////////////////////////////////////////////
+//  TREE :: ERASE  /////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 template<typename T>
 tree<T>::iterator tree<T>::erase (iterator Iterator) {
@@ -875,7 +912,7 @@ tree<T>::iterator tree<T>::erase (iterator Iterator) {
   ++ Iterator;
   erase(key);
   return Iterator;
-} // `erase ()`
+} // erase()
 
 } // namespace aport
 

@@ -9,19 +9,11 @@ ideal for performance-critical applications where keys share long common
 prefixes and some loss in accuracy is acceptable.
 
 ## Table of Contents
-- [APORT](#aport)
-  - [How It Works](#how-it-works)
-  - [Installation](#installation)
-    - [Options](#options)
-  - [Documentation](#documentation)
-    - [Creation](#creation)
-    - [insert(key, value)](#insertkey-value)
-    - [contains(key)](#containskey)
-    - [erase(key) / erase(iterator)](#erasekey--eraseiterator)
-    - [get(key)](#getkey)
-	- [operator\[\](key)](#operatorkey)
-    - [Iteration](#iteration)
-    - [length()](#length)
+- [How It Works](#how-it-works)
+- [Installation](#installation)
+  - [Options](#options)
+- [Quick Start](#quick-start)
+- [Documentation](#documentation)
 
 ## How It Works
 
@@ -67,83 +59,208 @@ You have the opportunity for further customization before your call to
 set(APORT_RADIX_MODE <OFF|ON>) # Default: OFF
 ```
 
-## Documentation
+## Quick Start
 
-APORT follows the container design patterns of the C++ Standard Libary.
-
-### Creation
 To get started:
+
 ```cpp
 // The value can be any type, not just `int`
 aport::tree<int> Tree;
-```
 
-### insert(key, value)
-Inserts a key-value pair into the tree.
-```cpp
-// Insert multiple entries with similar disambiugation points
+// Insert multiple entries with similar disambiguation points
 Tree.insert("arnold", 12);
 Tree.insert("arbold", 13);
 Tree.insert("arcold", 14);
 Tree.insert("arwold", 15);
-```
 
-### contains(key)
-Checks if key exists in the tree.
-```cpp
-// Remember that this uses a radix algorithm
-if (Tree.contains("arwold"))
-  printf("Wow, Arwold!\n");
-```
+try {
+  // get() is the only method that uses the optimized lookup
+  int &Arbold = Tree.get("arbold");
+} catch (aport::no_such_key &Exception) {
+  printf("No such key.\n");
+}
 
-### erase(key) / erase(iterator)
-Removes an entry from the tree.
-```cpp
-// Deletes the entry `"arcold"` and its data
-Tree.erase("arcold");
+// Remove entries
+Tree.erase("arbold");
+Tree.erase("arwold");
 
-// Or if you have an iterator
-Tree.erase(<iterator>);
-```
-
-### get(key)
-Returns a reference to the value associated with the key, or throws an 
-`aport::no_such_key` exception if it could not be located.
-```cpp
-int &Arwold = Tree.get("arwold");
-// Since `Arwold` is a reference, modifications affect the stored value
-Arwold = 19;
-```
-
-### operator\[](key)
-Like `get()` but default-constructs a new value if the key doesn't exist. 
-**Note** that this operation must use exact radix tree matching and cannot use
-optimistic retrieval. It is also worth noting that this still is much faster
-than first calling `contains()` and inserting if necessary and then calling
-`get()`.
-```cpp
-// If "thomas" doesn't exist, this creates him with value 0
-int &Thomas = Tree["thomas"];
-// But we could just as easily create him or his friend and give him a value
-// right away
-Tree["brian"] = 34;
-```
-
-### Iteration
-The tree supports standard iterator operations. The order of the elements for
-iteration is undefined.
-```cpp
-// Range-based for loop (`Key` and `Value` are references)
+// Range-based for loop; `Key` and `Value` are references
 for (auto [ Key, Value ] : Tree)
-  ; // Process key-value pair
+printf("[%s]: %d\n", Key.c_str(), Value);
+// Will print:
+// $ [arnold]: 12
+// $ [arcold]: 14
 
-// Iterator-based deletion
-for (auto I = Tree.begin(); I != Tree.end();)
+// Delete the rest of the entries
+for (auto I = Tree.begin(); I != Tree.end(); ++ I)
   I = Tree.erase(I);
 ```
 
-### length()
-Returns the number of elements in the tree.
+## Documentation
+- namespace aport
+  - [struct aport::no_such_key](#struct-aportno_such_key)
+  - [struct aport::tree](#struct-aporttree)
+    - [struct tree::iterator](#struct-treeiterator)
+    - [tree::insert()](#treeinsert)
+    - [tree::erase()](#treeerase)
+    - [tree::erase()](#treeerase-1)
+    - [tree::contains()](#treecontains)
+    - [tree::get()](#treeget)
+    - [tree::operator\[\]()](#treeoperator)
+    - [tree::clear()](#treeclear)
+    - [tree::length()](#treelength)
+    - [tree::print()](#treeprint)
+    - [tree::begin()](#treebegin)
+    - [tree::end()](#treeend)
+
+##
+
+### struct aport::no_such_key
 ```cpp
-size_t Count = Tree.length();
+struct no_such_key;
 ```
+When thrown, it denotes that the key that was attempted to be retrieved does not exist in the structure.
+
+##
+
+### struct aport::tree
+`movable`
+```cpp
+template<typename T>
+struct tree;
+```
+The APORT tree container, into which data can be inserted or erased, looked up or checked for inclusion.
+
+#### Template Parameters
+- `T`: Specifies the type stored in the tree.
+
+##
+
+### struct tree::iterator
+```cpp
+struct iterator;
+```
+Forward iterator.
+
+##
+
+### tree::insert()
+```cpp
+void insert (string Key, T Value);
+```
+Inserts an object of type `T` into the tree at `Key`.
+
+#### Parameters
+- `Key`: Location the inserted `Value` should be retrievable per.
+- `Value`: Value to be inserted per `Key`.
+
+##
+
+### tree::erase()
+```cpp
+void erase (string Key);
+```
+Erases the entry at location `Key`.
+
+#### Parameters
+- `Key`: Location at which an entry should be deleted from the tree.
+
+##
+
+### tree::erase()
+```cpp
+iterator erase (iterator Iterator);
+```
+Erases an element using an iterator `Iterator`. It is undefined behaviour to call this using an iterator that does not point to an element.
+
+#### Parameters
+- `Iterator`: Is an iterator to the element you want to delete.
+
+#### Returns
+An iterator to the element after the one that was erased.
+
+##
+
+### tree::contains()
+```cpp
+bool contains (string Key);
+```
+Checks if tree contains an entry whose key is `Key`.
+
+#### Parameters
+- `Key`: Key to check for to see if it is contained by the tree.
+
+#### Returns
+`true` if entry per `Key` exists in the tree, and `false` otherwise.
+
+##
+
+### tree::get()
+`throws`
+```cpp
+T &get (string Key);
+```
+Retrieve data of type `T` from tree node at `Key` if it exists.
+
+#### Parameters
+- `Key`: Location to retrieve data from.
+
+#### Returns
+Data of type `T` at location `Key` (if it exists), otherwise if no data or key exists, throws `no_such_key` exception.
+
+##
+
+### tree::operator\[\]()
+```cpp
+T &operator[] (string Key);
+```
+Retrieve the data of type `T` from tree node at `Key` if it exists, otherwise creates it, returning the data of type `T` from the newly inserted node.
+
+#### Parameters
+- `Key`: Location to retrieve data from (or insert data into).
+
+#### Returns
+Data of type `T` at location `Key` (if it exists), otherwise creates it and returns the newly created data.
+
+##
+
+### tree::clear()
+```cpp
+void clear ();
+```
+Clears all the content inside the tree.
+
+##
+
+### tree::length()
+```cpp
+size_t length ();
+```
+Returns the number of entries stored inside the tree.
+
+#### Returns
+Number of entries stored inside the tree.
+
+##
+
+### tree::print()
+```cpp
+void print ();
+```
+Outputs a visual representation of the tree. Could be useful for someone outside testing, so rather than making it local to the root test file, it has been provided here directly.
+
+##
+
+### tree::begin()
+```cpp
+iterator begin ();
+```
+Begin iterator.
+
+##
+
+### tree::end()
+```cpp
+iterator end ();
+```
+End iterator.
