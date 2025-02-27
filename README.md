@@ -39,7 +39,7 @@ include(FetchContent)
 FetchContent_Declare(
   aport
   GIT_REPOSITORY https://github.com/wye-sh/aport
-  GIT_TAG v1.1.3 # (latest version)
+  GIT_TAG v1.2.0 # (latest version)
 )
 FetchContent_MakeAvailable(aport)
 
@@ -107,6 +107,7 @@ for (auto I = Tree.begin(); I != Tree.end(); ++ I)
     - [tree::contains()](#treecontains)
     - [tree::get()](#treeget)
     - [tree::operator\[\]()](#treeoperator)
+    - [tree::query()](#treequery)
     - [tree::clear()](#treeclear)
     - [tree::length()](#treelength)
     - [tree::print()](#treeprint)
@@ -221,6 +222,20 @@ Retrieve the data of type `T` from tree node at `Key` if it exists, otherwise cr
 
 #### Returns
 Data of type `T` at location `Key` (if it exists), otherwise creates it and returns the newly created data.
+
+##
+
+### tree::query()
+```cpp
+vector<T *> query (string String);
+```
+Retrieves all entries that match against query string `String`, supporting wildcard expressions using "\*". For instance, if two entries are stored in the tree "astrid" and "arnold", the query string "a\*d" would retrieve both entries.
+
+#### Parameters
+- `String`: Query string that is used to determine what is returned.
+
+#### Returns
+A vector containing all entries that matched against query string `String`.
 
 ##
 

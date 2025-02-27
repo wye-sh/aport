@@ -28,6 +28,7 @@
 #include <list>
 #include <exception>
 #include <format>
+#include <vector>
 
 /*
  * PATH_UNREACHABLE()
@@ -457,7 +458,7 @@ struct tree {
     char   *KeyPtr       = const_cast<char *>(Key.c_str());
     size_t  KeyPtrLength = Key.length();
     node   *Node         = &*Root;
-
+    
     for (;;) {
       auto [ Result, NMatched ] =
 	Node->template compare_prefixes<AportRadixMode>(KeyPtr, KeyPtrLength);
@@ -605,6 +606,76 @@ struct tree {
     }
   } // operator[]()
 
+  /**-------------------------------------------------------------------------
+   * query()
+   *   Retrieves all entries that match against query string `String`,
+   *   supporting wildcard expressions using "\*". For instance, if two entries
+   *   are stored in the tree "astrid" and "arnold", the query string "a\*d"
+   *   would retrieve both entries. <String> is the query string that is used
+   *   to determine what is returned. <Returns> a vector containing all
+   *   entries that matched against query string `String`.
+   *-------------------------------------------------------------------------**/
+  vector<T *> query (string String) {
+    vector<T *> Matches;
+
+    struct matcher {
+      char *StringPtr;
+      node *Node;
+    }; // struct matcher
+    
+    stack<matcher> Stack;
+    Stack.push({ const_cast<char *>(String.c_str()), &*Root });
+
+    while (!Stack.empty()) {
+      // Retrieve top entry
+      auto [ StringPtr, Node ] = Stack.top();
+      Stack.pop(); // Pop top
+      
+      // Forward matcher
+      char *C = const_cast<char *>(Node->Prefix.c_str());
+      for (;;) {
+	if (*C == 0) {
+	  // Out of prefix
+	  
+	  if (*StringPtr == '*')
+	    // Ended on wildcard: push all children
+	    for (auto &[ C, Node ] : Node->FirstCharToNode)
+	      Stack.push({ StringPtr, &*Node });
+	  else if (Node->FirstCharToNode.contains(*StringPtr))
+	    // Ended on non-wildcard, push applicable child
+	    Stack.push({ StringPtr, &*Node->FirstCharToNode[*StringPtr] });
+	  
+	  // If string at end or at wildcard end
+	  if (Node->Data &&
+	      (*StringPtr == 0 ||
+	       *StringPtr == '*' && StringPtr[1] == 0))
+	    Matches.push_back(&*Node->Data);
+	  
+	  break;
+	} else if (*StringPtr == '*') {
+	  // String is wildcard
+	  
+	  char NextChar = StringPtr[1];
+	  for (; *C != 0; ++ C)
+	    if (*C == NextChar) {
+	      ++ StringPtr;
+	      break;
+	    }
+	} else if (*C == *StringPtr) {
+	  // String and prefix match, forward
+	  
+	  ++ StringPtr;
+	  ++ C;
+	} else
+	  // No match, break
+	  
+	  break;
+      }
+    }
+    
+    return Matches;
+  } // query()
+  
   /**-------------------------------------------------------------------------
    * clear()
    *   Clears all the content inside the tree.

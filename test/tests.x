@@ -381,7 +381,20 @@ TEST_CASE("Retreival (Insert If Necessary)", "[test]") {
   REQUIRE(NameToAge.length() == 3);
 }
 
-TEST_CASE("Copy and Move", "copy-and-move") {
+TEST_CASE("Querying", "[test]") {
+  aport::tree<int> Tree;
+  Tree["arnold"] = 10;
+  Tree["astrid"] = 15;
+
+  REQUIRE(Tree.query("a*d").size() == 2);
+  REQUIRE(*Tree.query("ar*")[0] == 10);
+  REQUIRE(*Tree.query("as*")[0] == 15);
+  REQUIRE(*Tree.query("ar*d")[0] == 10);
+  REQUIRE(*Tree.query("as*d")[0] == 15);
+  REQUIRE(Tree.query("*d").size() == 2);
+}
+
+TEST_CASE("Copy and Move", "[test]") {
   aport::tree<int> Tree;
 
   Tree["one"]   = 1;
