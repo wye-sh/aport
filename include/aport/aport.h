@@ -455,7 +455,7 @@ struct tree {
   T &get (const string &Key, bool PermitUnterminated = false) {
     char *KeyPtr = const_cast<char *>(Key.c_str());
     return get
-      (Ptr,
+      (KeyPtr,
        Key.length(),
        PermitUnterminated);
   } // `get ()`
