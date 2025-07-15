@@ -453,8 +453,9 @@ struct tree {
    *   return a node even if the `Key` was not fully consumed.
    *-------------------------------------------------------------------------**/
   T &get (const string &Key, bool PermitUnterminated = false) {
+    char *KeyPtr = const_cast<char *>(Key.c_str());
     return get
-      (const_cast<char *>(Key.c_str()),
+      (Ptr,
        Key.length(),
        PermitUnterminated);
   } // `get ()`
@@ -468,13 +469,13 @@ struct tree {
    *   <PermitUnterminated> if `true`, will return a node even if the `Key` was
    *   not fully consumed.
    *-------------------------------------------------------------------------**/
-  T &get (char *Key, size_t KeyLength, bool PermitUnterminated = false) {
+  T &get (char *&Key, size_t KeyLength, bool PermitUnterminated = false) {
     using comparison_result = node::comparison_result;
     
     // Traverse the tree, disambiguating along the way
-    char   *KeyPtr       = Key;
-    size_t  KeyPtrLength = KeyLength;
-    node   *Node         = &*Root;
+    char   *&KeyPtr       = Key;
+    size_t   KeyPtrLength = KeyLength;
+    node    *Node         = &*Root;
     
     for (;;) {
       auto [ Result, NMatched ] =
