@@ -453,11 +453,24 @@ struct tree {
    *   return a node even if the `Key` was not fully consumed.
    *-------------------------------------------------------------------------**/
   T &get (const string &Key, bool PermitUnterminated = false) {
+    return get(const_cast<char *>(Key.c_str()), Key.length());
+  } // `get ()`
+
+  /**-------------------------------------------------------------------------
+   * get()
+   *   [throws] Retrieve data of type `T` from tree node at `Key` if it exists.
+   *   <Key> is the location to retrieve data from. <Returns> the data of type
+   *   `T` at location `Key` (if it exists), otherwise if no data or key exists,
+   *   throws `no_such_key` exception. <KeyLength> is the length of the key.
+   *   <PermitUnterminated> if `true`, will return a node even if the `Key` was
+   *   not fully consumed.
+   *-------------------------------------------------------------------------**/
+  T &get (char *Key, size_t KeyLength, bool PermitUnterminated = false) {
     using comparison_result = node::comparison_result;
     
     // Traverse the tree, disambiguating along the way
-    char   *KeyPtr       = const_cast<char *>(Key.c_str());
-    size_t  KeyPtrLength = Key.length();
+    char   *KeyPtr       = Key;
+    size_t  KeyPtrLength = KeyLength;
     node   *Node         = &*Root;
     
     for (;;) {
