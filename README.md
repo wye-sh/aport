@@ -199,12 +199,13 @@ Checks if tree contains an entry whose key is `Key`.
 ### tree::get()
 `throws`
 ```cpp
-T &get (string Key);
+T &get (const string &Key, bool PermitUnterminated = false);
 ```
 Retrieve data of type `T` from tree node at `Key` if it exists.
 
 #### Parameters
 - `Key`: Location to retrieve data from.
+- `PermitUnterminated`: If `true`, will return a node even if the `Key` was not fully consumed.
 
 #### Returns
 Data of type `T` at location `Key` (if it exists), otherwise if no data or key exists, throws `no_such_key` exception.

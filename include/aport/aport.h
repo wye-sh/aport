@@ -449,11 +449,12 @@ struct tree {
    *   [throws] Retrieve data of type `T` from tree node at `Key` if it exists.
    *   <Key> is the location to retrieve data from. <Returns> the data of type
    *   `T` at location `Key` (if it exists), otherwise if no data or key exists,
-   *   throws `no_such_key` exception.
+   *   throws `no_such_key` exception. <PermitUnterminated> if `true`, will
+   *   return a node even if the `Key` was not fully consumed.
    *-------------------------------------------------------------------------**/
-  T &get (string Key) {
+  T &get (const string &Key, bool PermitUnterminated = false) {
     using comparison_result = node::comparison_result;
-
+    
     // Traverse the tree, disambiguating along the way
     char   *KeyPtr       = const_cast<char *>(Key.c_str());
     size_t  KeyPtrLength = Key.length();
@@ -480,8 +481,11 @@ struct tree {
           Node = &*Node->FirstCharToNode[NodeAccessor];
           continue; // [[CONTINUE]]
         }
-
-	throw no_such_key(Key); // [[THROW]]
+	
+	if (!PermitUnterminated)
+	  throw no_such_key(Key); // [[THROW]]
+	else
+	  return *Node->Data;
       }
         // ^- prefix_full_match
 
