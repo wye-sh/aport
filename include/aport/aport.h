@@ -453,7 +453,10 @@ struct tree {
    *   return a node even if the `Key` was not fully consumed.
    *-------------------------------------------------------------------------**/
   T &get (const string &Key, bool PermitUnterminated = false) {
-    return get(const_cast<char *>(Key.c_str()), Key.length());
+    return get
+      (const_cast<char *>(Key.c_str()),
+       Key.length(),
+       PermitUnterminated);
   } // `get ()`
 
   /**-------------------------------------------------------------------------
